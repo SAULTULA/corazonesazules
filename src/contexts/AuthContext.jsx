@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
       .from('tenants')
       .select('*')
       .eq('owner_id', userId)
-      .single();
+      .maybeSingle();
     setTenant(data ?? null);
     setLoading(false);
   };

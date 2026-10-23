@@ -116,14 +116,14 @@ function AdminPanel() {
         if (error) throw new Error(error.message);
       } else {
         // ── Crear nuevo negocio ──
-        // 1. Crear usuario en Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        // 1. Registrar usuario con signUp (funciona con anon key)
+        const { data: authData, error: authError } = await supabase.auth.signUp({
           email: formData.owner_email,
           password: formData.owner_password,
-          email_confirm: true,
         });
 
         if (authError) throw new Error('Error creando usuario: ' + authError.message);
+        if (!authData.user) throw new Error('No se pudo crear el usuario');
 
         // 2. Insertar tenant
         const { error: tenantError } = await supabase.from('tenants').insert({
@@ -362,6 +362,7 @@ function AdminPanel() {
                     value={formData.owner_password}
                     onChange={e => setFormData({ ...formData, owner_password: e.target.value })}
                     minLength={8}
+                    autoComplete="new-password"
                     required
                   />
                 </div>
