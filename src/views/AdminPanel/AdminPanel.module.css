@@ -1,0 +1,565 @@
+/* ────────────────────────────────────────────────────────────────
+   AdminPanel.module.css  — BEM
+──────────────────────────────────────────────────────────────── */
+
+.admin {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
+
+/* ── Header ── */
+.admin__header {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--spacing-md) var(--spacing-xl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.admin__headerBrand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.admin__headerIcon {
+  font-size: 1.5rem;
+  background: var(--color-primary);
+  color: #000;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+}
+
+.admin__headerTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.admin__headerSub {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.admin__logoutBtn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-family: var(--font-family);
+  transition: all 0.2s;
+}
+
+.admin__logoutBtn:hover {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+/* ── Body ── */
+.admin__body {
+  padding: var(--spacing-xl);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ── Stats ── */
+.admin__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.admin__stat {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  display: grid;
+  gap: var(--spacing-xs);
+  transition: transform 0.2s;
+}
+
+.admin__stat:hover {
+  transform: translateY(-2px);
+}
+
+.admin__statLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.admin__statValue {
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+/* ── Create Button ── */
+.admin__createBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 0.75rem 1.5rem;
+  background: var(--color-primary);
+  color: #000;
+  font-weight: 700;
+  font-size: 0.95rem;
+  font-family: var(--font-family);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-bottom: var(--spacing-xl);
+}
+
+.admin__createBtn:hover { background: var(--color-primary-hover); }
+.admin__createBtn:active { transform: scale(0.98); }
+
+/* ── Grid de negocios ── */
+.admin__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.admin__empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--spacing-xl) var(--spacing-md);
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/* ── Tarjeta de negocio ── */
+.admin__tenantCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.admin__tenantCard:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.admin__tenantBanner {
+  height: 8px;
+}
+
+.admin__tenantBody {
+  padding: var(--spacing-lg);
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.admin__tenantLogoRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.admin__tenantLogo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  padding: 4px;
+}
+
+.admin__tenantLogoPlaceholder {
+  width: 56px;
+  height: 56px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+}
+
+.admin__tenantName {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.admin__tenantSlogan {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.admin__tenantMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.admin__tenantEmail {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+}
+
+.admin__tenantColor {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.admin__tenantActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.admin__tenantEditBtn {
+  flex: 1;
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: var(--font-family);
+  transition: all 0.2s;
+}
+
+.admin__tenantEditBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.admin__tenantDeleteBtn {
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-family: var(--font-family);
+  transition: all 0.2s;
+}
+
+.admin__tenantDeleteBtn:hover {
+  border-color: #e74c3c;
+  color: #e74c3c;
+  background: rgba(231,76,60,0.08);
+}
+
+/* ── Modal ── */
+.admin__modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: grid;
+  place-items: center;
+  z-index: 200;
+  padding: var(--spacing-md);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.admin__form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  width: clamp(320px, 90vw, 560px);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: grid;
+  gap: var(--spacing-lg);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.admin__formTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.admin__formSection {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.admin__formSectionTitle {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin__formGroup {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.admin__formLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin__formInput {
+  padding: 0.75rem 1rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-family: var(--font-family);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.admin__formInput:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(243,156,18,0.12);
+}
+
+/* ── Logo Upload ── */
+.admin__logoUpload {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.admin__logoDropzone {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin__logoDropzone:hover,
+.admin__logoDropzone--active {
+  border-color: var(--color-primary);
+  background: rgba(243,156,18,0.04);
+}
+
+.admin__logoDropzone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.admin__logoDropzoneIcon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.admin__logoDropzoneText {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.admin__logoDropzoneText strong {
+  color: var(--color-primary);
+}
+
+.admin__logoPreview {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.admin__logoPreviewImg {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+.admin__logoPreviewInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin__logoPreviewName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin__logoPreviewSize {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.admin__logoRemoveBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s;
+}
+
+.admin__logoRemoveBtn:hover { color: #e74c3c; }
+
+/* ── Color Preview ── */
+.admin__colorPreview {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.admin__colorSwatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid var(--color-border);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.admin__colorText {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.admin__colorHex {
+  font-weight: 700;
+  color: var(--color-text);
+  font-family: monospace;
+}
+
+/* ── Form Actions ── */
+.admin__formActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}
+
+.admin__cancelBtn {
+  padding: 0.7rem 1.2rem;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.admin__cancelBtn:hover { border-color: var(--color-text-muted); color: var(--color-text); }
+
+.admin__submitBtn {
+  padding: 0.7rem 1.4rem;
+  background: var(--color-primary);
+  border: none;
+  color: #000;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.admin__submitBtn:hover { background: var(--color-primary-hover); }
+.admin__submitBtn:active { transform: scale(0.98); }
+.admin__submitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Error banner ── */
+.admin__formError {
+  background: rgba(231,76,60,0.12);
+  border: 1px solid rgba(231,76,60,0.3);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.875rem;
+  color: #e74c3c;
+}
+
+/* ── Paleta generada ── */
+.admin__paletteRow {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.admin__paletteChip {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.admin__paletteChip:hover { transform: scale(1.15); }
