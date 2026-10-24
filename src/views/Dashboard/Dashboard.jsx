@@ -22,7 +22,14 @@ function Dashboard({ setView }) {
       
       <main className={styles.dashboard__grid}>
         {cards.map(card => (
-          <section key={card.id} className={styles.dashboard__card}>
+          <section
+            key={card.id}
+            className={`${styles.dashboard__card} ${tenant?.logo_url ? styles['dashboard__card--branded'] : ''}`}
+            style={tenant?.logo_url ? {
+              '--card-logo': `url(${tenant.logo_url})`,
+              '--card-color': tenant?.primary_color || 'var(--color-primary)',
+            } : {}}
+          >
             <h2 className={styles.dashboard__cardTitle}>{card.title}</h2>
             <p className={styles.dashboard__cardDesc}>{card.desc}</p>
             <button 

@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import styles from './AdminPanel.module.css';
 
 const STORAGE_BUCKET = 'tenant-logos';
+const APP_URL = import.meta.env.VITE_APP_URL || window.location.origin;
 
 function AdminPanel() {
   const { signOut } = useAuth();
@@ -14,6 +15,26 @@ function AdminPanel() {
   const [editingTenant, setEditingTenant] = useState(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
+  // Modal de credenciales
+  const [credentialsTenant, setCredentialsTenant] = useState(null);
+  const [storedPasswords, setStoredPasswords] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('ca_passwords') || '{}');
+    } catch {
+      return {};
+    }
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [copiedField, setCopiedField] = useState('');
+
+  // Editar contraseña en credenciales
+  const [editingPassword, setEditingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordSaveError, setPasswordSaveError] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -86,7 +107,6 @@ function AdminPanel() {
       let logoUrl = editingTenant?.logo_url || '';
       let primaryColor = editingTenant?.primary_color || '#f39c12';
 
-      // 1. Upload logo if new file
       if (logoFile) {
         const ext = logoFile.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
@@ -116,7 +136,6 @@ function AdminPanel() {
         if (error) throw new Error(error.message);
       } else {
         // ── Crear nuevo negocio ──
-        // 1. Registrar usuario con signUp (funciona con anon key)
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: formData.owner_email,
           password: formData.owner_password,
@@ -125,17 +144,30 @@ function AdminPanel() {
         if (authError) throw new Error('Error creando usuario: ' + authError.message);
         if (!authData.user) throw new Error('No se pudo crear el usuario');
 
-        // 2. Insertar tenant
-        const { error: tenantError } = await supabase.from('tenants').insert({
-          business_name: formData.business_name,
-          slogan: formData.slogan,
-          logo_url: logoUrl,
-          primary_color: primaryColor,
-          owner_id: authData.user.id,
-          owner_email: formData.owner_email,
-        });
+        const { data: newTenant, error: tenantError } = await supabase
+          .from('tenants')
+          .insert({
+            business_name: formData.business_name,
+            slogan: formData.slogan,
+            logo_url: logoUrl,
+            primary_color: primaryColor,
+            owner_id: authData.user.id,
+            owner_email: formData.owner_email,
+          })
+          .select()
+          .single();
 
         if (tenantError) throw new Error(tenantError.message);
+
+        // Guardar contraseña en localStorage (cifrado simple base64)
+        if (newTenant) {
+          const updated = {
+            ...storedPasswords,
+            [newTenant.id]: btoa(formData.owner_password),
+          };
+          setStoredPasswords(updated);
+          localStorage.setItem('ca_passwords', JSON.stringify(updated));
+        }
       }
 
       await fetchTenants();
@@ -162,10 +194,31 @@ function AdminPanel() {
     setShowForm(true);
   };
 
+  // ── Delete corregido con optimistic update ──────────────────────
+
   const handleDelete = async (tenant) => {
     if (!window.confirm(`¿Eliminar "${tenant.business_name}"? Esto es irreversible.`)) return;
-    await supabase.from('tenants').delete().eq('id', tenant.id);
-    fetchTenants();
+
+    // Optimistic update: remover de UI inmediatamente
+    setTenants(prev => prev.filter(t => t.id !== tenant.id));
+    setDeleteError('');
+
+    const { error } = await supabase
+      .from('tenants')
+      .delete()
+      .eq('id', tenant.id);
+
+    if (error) {
+      // Revertir si falló
+      setDeleteError(`No se pudo eliminar "${tenant.business_name}": ${error.message}`);
+      await fetchTenants(); // restaurar lista real
+    } else {
+      // Limpiar contraseña guardada
+      const updated = { ...storedPasswords };
+      delete updated[tenant.id];
+      setStoredPasswords(updated);
+      localStorage.setItem('ca_passwords', JSON.stringify(updated));
+    }
   };
 
   const handleCloseForm = () => {
@@ -174,6 +227,63 @@ function AdminPanel() {
     setFormData({ business_name: '', slogan: 'Amasado con Fe y Amor', owner_email: '', owner_password: '' });
     removeLogo();
     setFormError('');
+  };
+
+  // ── Credenciales ───────────────────────────────────────────────
+
+  const openCredentials = (tenant) => {
+    setCredentialsTenant(tenant);
+    setShowPassword(false);
+    setResetSent(false);
+    setEditingPassword(false);
+    setNewPassword('');
+    setPasswordSaveError('');
+  };
+
+  const closeCredentials = () => {
+    setCredentialsTenant(null);
+    setEditingPassword(false);
+    setNewPassword('');
+    setPasswordSaveError('');
+  };
+
+  const getStoredPassword = (tenantId) => {
+    const enc = storedPasswords[tenantId];
+    if (!enc) return null;
+    try { return atob(enc); } catch { return null; }
+  };
+
+  const handleSaveNewPassword = (tenantId) => {
+    if (newPassword.length < 8) {
+      setPasswordSaveError('Mínimo 8 caracteres');
+      return;
+    }
+    const updated = { ...storedPasswords, [tenantId]: btoa(newPassword) };
+    setStoredPasswords(updated);
+    localStorage.setItem('ca_passwords', JSON.stringify(updated));
+    setEditingPassword(false);
+    setNewPassword('');
+    setPasswordSaveError('');
+  };
+
+  const handleSendResetEmail = async () => {
+    if (!credentialsTenant?.owner_email) return;
+    setResetting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      credentialsTenant.owner_email,
+      { redirectTo: `${APP_URL}/reset-password` }
+    );
+    setResetting(false);
+    if (!error) setResetSent(true);
+  };
+
+  const getTenantUrl = (tenant) =>
+    `${APP_URL}?t=${tenant.id}`;
+
+  const copyToClipboard = async (text, field) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(''), 2000);
   };
 
   // ── Render ─────────────────────────────────────────────────────
@@ -201,6 +311,14 @@ function AdminPanel() {
           </div>
         </div>
 
+        {/* Error de borrado */}
+        {deleteError && (
+          <div className={styles.admin__deleteError}>
+            ⚠️ {deleteError}
+            <button onClick={() => setDeleteError('')} className={styles.admin__deleteErrorClose}>×</button>
+          </div>
+        )}
+
         {/* Create button */}
         <button className={styles.admin__createBtn} onClick={() => setShowForm(true)}>
           <span>+</span> Crear Nuevo Negocio
@@ -222,13 +340,14 @@ function AdminPanel() {
                 tenant={tenant}
                 onEdit={() => handleEdit(tenant)}
                 onDelete={() => handleDelete(tenant)}
+                onCredentials={() => openCredentials(tenant)}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal — Crear / Editar */}
       {showForm && (
         <div className={styles.admin__modal} onClick={(e) => e.target === e.currentTarget && handleCloseForm()}>
           <form className={styles.admin__form} onSubmit={handleSubmit}>
@@ -311,7 +430,6 @@ function AdminPanel() {
                   </div>
                 )}
 
-                {/* Paleta generada */}
                 {palette && (
                   <div className={styles.admin__colorPreview}>
                     <div
@@ -338,7 +456,7 @@ function AdminPanel() {
               </div>
             </section>
 
-            {/* Datos del dueño */}
+            {/* Datos del dueño — solo en creación */}
             {!editingTenant && (
               <section className={styles.admin__formSection}>
                 <p className={styles.admin__formSectionTitle}>Acceso del dueño</p>
@@ -380,18 +498,173 @@ function AdminPanel() {
           </form>
         </div>
       )}
+
+      {/* Modal — Credenciales */}
+      {credentialsTenant && (
+        <div className={styles.admin__modal} onClick={(e) => e.target === e.currentTarget && closeCredentials()}>
+          <div className={styles.admin__credModal}>
+            <div className={styles.admin__credHeader}>
+              {credentialsTenant.logo_url && (
+                <img src={credentialsTenant.logo_url} alt="" className={styles.admin__credLogo} />
+              )}
+              <div>
+                <h2 className={styles.admin__credTitle}>🔑 Acceso del cliente</h2>
+                <p className={styles.admin__credSubtitle}>{credentialsTenant.business_name}</p>
+              </div>
+              <button className={styles.admin__credCloseBtn} onClick={closeCredentials}>×</button>
+            </div>
+
+            <div className={styles.admin__credBody}>
+
+              {/* Email */}
+              <div className={styles.admin__credField}>
+                <span className={styles.admin__credFieldLabel}>📧 Email</span>
+                <div className={styles.admin__credFieldRow}>
+                  <code className={styles.admin__credFieldValue}>{credentialsTenant.owner_email}</code>
+                  <button
+                    className={styles.admin__credCopyBtn}
+                    onClick={() => copyToClipboard(credentialsTenant.owner_email, 'email')}
+                  >
+                    {copiedField === 'email' ? '✓ Copiado' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Contraseña */}
+              <div className={styles.admin__credField}>
+                <span className={styles.admin__credFieldLabel}>🔒 Contraseña guardada</span>
+                {editingPassword ? (
+                  <div className={styles.admin__credPasswordEdit}>
+                    <input
+                      className={styles.admin__formInput}
+                      type="text"
+                      placeholder="Nueva contraseña (mín. 8 chars)"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      autoFocus
+                    />
+                    {passwordSaveError && (
+                      <p className={styles.admin__credError}>{passwordSaveError}</p>
+                    )}
+                    <div className={styles.admin__credPasswordEditActions}>
+                      <button
+                        className={styles.admin__cancelBtn}
+                        onClick={() => { setEditingPassword(false); setNewPassword(''); setPasswordSaveError(''); }}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        className={styles.admin__submitBtn}
+                        onClick={() => handleSaveNewPassword(credentialsTenant.id)}
+                      >
+                        Guardar localmente
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.admin__credFieldRow}>
+                    {getStoredPassword(credentialsTenant.id) ? (
+                      <>
+                        <code className={styles.admin__credFieldValue}>
+                          {showPassword
+                            ? getStoredPassword(credentialsTenant.id)
+                            : '••••••••••'}
+                        </code>
+                        <button
+                          className={styles.admin__credCopyBtn}
+                          onClick={() => setShowPassword(v => !v)}
+                        >
+                          {showPassword ? '🙈 Ocultar' : '👁 Ver'}
+                        </button>
+                        <button
+                          className={styles.admin__credCopyBtn}
+                          onClick={() => copyToClipboard(getStoredPassword(credentialsTenant.id), 'pass')}
+                        >
+                          {copiedField === 'pass' ? '✓ Copiado' : 'Copiar'}
+                        </button>
+                      </>
+                    ) : (
+                      <span className={styles.admin__credEmpty}>
+                        No guardada — fue creada antes de esta versión
+                      </span>
+                    )}
+                    <button
+                      className={styles.admin__credCopyBtn}
+                      onClick={() => setEditingPassword(true)}
+                    >
+                      ✏️ Editar
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* URL única */}
+              <div className={styles.admin__credField}>
+                <span className={styles.admin__credFieldLabel}>🔗 URL de acceso del cliente</span>
+                <div className={styles.admin__credFieldRow}>
+                  <code className={styles.admin__credFieldValue} style={{ fontSize: '0.75rem' }}>
+                    {getTenantUrl(credentialsTenant)}
+                  </code>
+                  <button
+                    className={styles.admin__credCopyBtn}
+                    onClick={() => copyToClipboard(getTenantUrl(credentialsTenant), 'url')}
+                  >
+                    {copiedField === 'url' ? '✓ Copiado' : 'Copiar'}
+                  </button>
+                </div>
+                <p className={styles.admin__credHint}>
+                  El cliente puede acceder desde cualquier dispositivo con esta URL. Al iniciar sesión, el sistema lo lleva directo a su panel.
+                </p>
+              </div>
+
+              {/* Reset email */}
+              <div className={styles.admin__credField}>
+                <span className={styles.admin__credFieldLabel}>📬 Recuperación de contraseña</span>
+                {resetSent ? (
+                  <div className={styles.admin__credSuccess}>
+                    ✅ Se envió un email de recuperación a <strong>{credentialsTenant.owner_email}</strong>.<br />
+                    El cliente podrá crear una contraseña nueva desde ese link.
+                  </div>
+                ) : (
+                  <div>
+                    <p className={styles.admin__credHint}>
+                      Enviá un email de recuperación para que el cliente pueda restablecer su contraseña directamente.
+                    </p>
+                    <button
+                      className={styles.admin__credResetBtn}
+                      onClick={handleSendResetEmail}
+                      disabled={resetting}
+                    >
+                      {resetting ? 'Enviando...' : '📧 Enviar email de recuperación'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Tenant Card Component ────────────────────────────────────────
 
-function TenantCard({ tenant, onEdit, onDelete }) {
+function TenantCard({ tenant, onEdit, onDelete, onCredentials }) {
+  const bannerStyle = tenant.logo_url
+    ? {
+        backgroundImage: `url(${tenant.logo_url})`,
+        '--banner-color': tenant.primary_color || 'var(--color-primary)',
+      }
+    : {
+        background: tenant.primary_color || 'var(--color-primary)',
+      };
+
   return (
     <article className={styles.admin__tenantCard}>
       <div
-        className={styles.admin__tenantBanner}
-        style={{ background: tenant.primary_color || 'var(--color-primary)' }}
+        className={`${styles.admin__tenantBanner} ${tenant.logo_url ? styles['admin__tenantBanner--withLogo'] : ''}`}
+        style={bannerStyle}
       />
       <div className={styles.admin__tenantBody}>
         <div className={styles.admin__tenantLogoRow}>
@@ -422,6 +695,7 @@ function TenantCard({ tenant, onEdit, onDelete }) {
         </div>
 
         <div className={styles.admin__tenantActions}>
+          <button className={styles.admin__tenantCredBtn} onClick={onCredentials}>🔑 Acceso</button>
           <button className={styles.admin__tenantEditBtn} onClick={onEdit}>✏️ Editar</button>
           <button className={styles.admin__tenantDeleteBtn} onClick={onDelete}>🗑️</button>
         </div>
